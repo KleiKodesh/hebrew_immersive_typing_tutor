@@ -97,6 +97,8 @@ const wideKeys = new Set(['Backspace','Tab','Caps','Enter','LShift','Shift','Ctr
 function normalizeKey(key: string) {
   if (key === ' ')      return 'Space'
   if (key === 'LShift') return 'Shift'
+  // For dual keys (e.g., 'ף:'), extract just the first character for comparison
+  if (key.length > 1 && isDualKey(key)) return key.charAt(0)
   return key
 }
 
@@ -182,7 +184,7 @@ const handOverlays = useHandOverlays(nextKeyRef, prevKeyRef, lang, kbWidth, kbHe
   border-radius: 1px;
   background: rgba(236, 237, 244, 0.85);
   border: 0.5px solid rgba(192, 194, 204, 0.7);
-  font-size: clamp(7px, 1.6vw, 9px);
+  font-size: clamp(9px, 2vw, 12px);
   font-weight: 500;
   color: var(--text-primary);
   padding: 0 1px;
@@ -220,7 +222,7 @@ const handOverlays = useHandOverlays(nextKeyRef, prevKeyRef, lang, kbWidth, kbHe
 }
 
 .dual-key-content .shifted   { font-size: clamp(6px, 1.5vw, 8px); opacity: 0.55; }
-.dual-key-content .unshifted { font-size: clamp(8px, 1.9vw, 10px); }
+.dual-key-content .unshifted { font-size: clamp(10px, 2.3vw, 13px); }
 
 .key.special {
   background: rgba(236, 237, 244, 0.95);
