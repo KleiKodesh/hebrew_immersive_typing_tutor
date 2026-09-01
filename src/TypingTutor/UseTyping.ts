@@ -11,6 +11,7 @@ import { useSessionTimer } from './useSessionTimer'
 import { useZoneProgress } from './useZoneProgress'
 import { useLessonNavigation } from './useLessonNavigation'
 import { useTypingInput } from './useTypingInput'
+import { useBlindMode } from './useBlindMode'
 import { useUserProfile } from '../composables/useUserProfile'
 import { usePersistence } from '../composables/usePersistence'
 
@@ -120,6 +121,7 @@ export function useTyping(initialLesson: Lesson, userName?: Ref<string>) {
   
   // ── Sub-composables ─────────────────────────────────────────────────────────
   const session = useSessionTimer(userKey)
+  const blind = useBlindMode(userKey)
 
   const ayinCorrect = ref(0)
   const ayinTotal = ref(0)
@@ -183,6 +185,7 @@ export function useTyping(initialLesson: Lesson, userName?: Ref<string>) {
   const displayText = computed(() => {
     if (exerciseMode.value === 'free') return ''
     if (exerciseMode.value === 'recall' && zone.recallHidden.value) return ''
+    if (blind.blindHidden.value) return ''
     const target = zone.currentTarget.value
     let html = ''
     for (let i = 0; i < target.length; i++) {
@@ -213,19 +216,24 @@ export function useTyping(initialLesson: Lesson, userName?: Ref<string>) {
     lastKey.value = ''; heldKey.value = ''; mistakeKey.value = ''
     ayinCorrect.value = 0; ayinTotal.value = 0
     showSummary.value = false; summaryData.value = null
-    zone.resetZoneState(); zone.clearAutoAdvance()
+    zone.resetZoneState(); zone.clearAutoAdvance(); blind.resetBlindReveal()
   }
 
   function resetZone() {
     typed.value = ''
     accuracy.value = 100; wpm.value = 0; progress.value = 0; start.value = null
     lastKey.value = ''; mistakeKey.value = ''
-    zone.resetZoneState(); zone.clearAutoAdvance()
+    zone.resetZoneState(); zone.clearAutoAdvance(); blind.resetBlindReveal()
   }
 
   // ── Lesson application ──────────────────────────────────────────────────────
+  const EXERCISE_MODES: ExerciseMode[] = ['copy', 'recall', 'free']
+
   function applyLesson(lesson: Lesson, restoreZoneIndex?: number) {
     currentLesson.value = lesson
+    // The lesson data drives the mode — recall lessons hide the text, free lessons drop the tunnel
+    const mode = lesson.exercise_mode as ExerciseMode | undefined
+    exerciseMode.value = mode && EXERCISE_MODES.includes(mode) ? mode : 'copy'
     resetTyping()
     // Restore zone index if provided, otherwise start at zone 0
     if (restoreZoneIndex !== undefined) {
@@ -385,6 +393,7 @@ export function useTyping(initialLesson: Lesson, userName?: Ref<string>) {
       ayin_check: weakLetters.includes(AYIN),
     }
     currentLesson.value = lesson
+    exerciseMode.value = 'copy'
     zone.currentZoneIndex.value = 0
     resetTyping()
   }
@@ -399,6 +408,7 @@ export function useTyping(initialLesson: Lesson, userName?: Ref<string>) {
     // Load user data from persistence if user is set
     if (userName?.value && allStages.value.length > 0) {
       weak.value = persistence.loadWeak(userName.value)
+      blind.loadBlindMode()
       const position = persistence.loadPosition(userName.value)
       const stage = allStages.value[Math.min(position.stageIndex, allStages.value.length - 1)]
       if (stage) {
@@ -479,6 +489,7 @@ export function useTyping(initialLesson: Lesson, userName?: Ref<string>) {
       weak.value = persistence.loadWeak(userName.value)
       stageCompletions.value = {} // Clear cache, will be loaded on demand
       session.reloadSessionForUser()
+      blind.loadBlindMode()
 
       // Restore position
       const position = persistence.loadPosition(userName.value)
@@ -508,6 +519,8 @@ export function useTyping(initialLesson: Lesson, userName?: Ref<string>) {
     advanceZone: zone.advanceZone,
     recallReady: zone.recallReady, recallHidden: zone.recallHidden,
     startRecall: zone.startRecall,
+    blindMode: blind.blindMode, blindHidden: blind.blindHidden,
+    toggleBlindMode: blind.toggleBlindMode, revealBlind: blind.revealBlind,
     sessionElapsedMs: session.sessionElapsedMs,
     sessionWarning: session.sessionWarning, sessionExpired: session.sessionExpired,
     sessionSecondsDisplay: session.sessionSecondsDisplay,

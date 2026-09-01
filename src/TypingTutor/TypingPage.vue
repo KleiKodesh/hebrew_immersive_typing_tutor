@@ -101,6 +101,13 @@
         <div class="zone-text-body" dir="rtl">{{ zoneText }}</div>
       </div>
 
+      <!-- Blind typing: hide the target text on demand (recall lessons hide it anyway) -->
+      <HideTextToggle
+        v-if="exerciseMode === 'copy'"
+        :active="blindMode"
+        @toggle="toggleBlindMode"
+      />
+
       <!-- Recall mode: show text → hide → type -->
       <RecallPanel
         v-if="exerciseMode === 'recall' && !recallReady"
@@ -126,7 +133,7 @@
         v-else
         :model-value="typed"
         :display-text="displayText"
-        :is-hidden="exerciseMode === 'recall' && recallHidden"
+        :is-hidden="(exerciseMode === 'recall' && recallHidden) || blindHidden"
         @update:modelValue="typed = $event"
         @input="onInput"
         @keydown="onKeyDown"
@@ -181,6 +188,7 @@ import ConfirmDialog from './ConfirmDialog.vue'
 import SessionExpiredOverlay from './SessionExpiredOverlay.vue'
 import LessonSummaryOverlay from './LessonSummaryOverlay.vue'
 import RecallPanel from './RecallPanel.vue'
+import HideTextToggle from './HideTextToggle.vue'
 import FreeTypingPanel from './FreeTypingPanel.vue'
 import LessonInfoCard from './LessonInfoCard.vue'
 import StageIntroOverlay from './StageIntroOverlay.vue'
@@ -202,6 +210,7 @@ const {
   englishWarning, currentLesson, currentStage, allStages, displayText, exerciseMode,
   currentZone, currentZoneIndex, availableZones,
   recallReady, recallHidden, startRecall,
+  blindMode, blindHidden, toggleBlindMode, revealBlind,
   sessionSecondsDisplay, sessionWarning, sessionExpired,
   ayinAccuracy, showSummary, summaryData,
   dismissSummaryAndAdvance, dismissSummaryAndStay,
@@ -215,13 +224,12 @@ const {
 } = useTyping({ title: '', text: '' }, userName)
 
 function showRecallPanel() {
-  // return to the recall view so the user can re-read the text
-  try {
-    ;(recallReady as any).value = false
-    ;(recallHidden as any).value = false
-    console.log('[TypingPage] showRecallPanel called — recallReady reset')
-  } catch (e) {
-    console.error('Failed to show recall panel', e)
+  // 'הצג שוב' — peek at the target text again
+  if (blindHidden.value) revealBlind()
+  if (exerciseMode.value === 'recall') {
+    // return to the recall view so the user can re-read the whole text
+    recallReady.value = false
+    recallHidden.value = false
   }
 }
 
