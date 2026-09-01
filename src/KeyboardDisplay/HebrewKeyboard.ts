@@ -8,8 +8,8 @@
 export const KEYBOARD_HE: string[][] = [
   ['`~', '1!', '2@', '3#', '4$', '5%', '6^', '7&', '8*', '9(', '0)', '-_', '=+', 'Backspace'],
   ['Tab', '/', '\'', 'ק', 'ר', 'א', 'ט', 'ו', 'ן', 'ם', 'פ', '[{', ']}', '\\|'],
-  ['Caps', 'ש', 'ד', 'ג', 'כ', 'ע', 'י', 'ח', 'ל', 'ך', 'ף:', '\'״', 'Enter'],
-  ['LShift', 'ז', 'ס', 'ב', 'ה', 'נ', 'מ', 'צ', 'ת', 'ץ', '/?', 'Shift'],
+  ['Caps', 'ש', 'ד', 'ג', 'כ', 'ע', 'י', 'ח', 'ל', 'ך', 'ף:', ',"', 'Enter'],
+  ['LShift', 'ז', 'ס', 'ב', 'ה', 'נ', 'מ', 'צ', 'ת', 'ץ', '.?', 'Shift'],
   ['Ctrl', 'Win', 'Alt', 'Space', 'Alt', 'Fn', 'Ctrl'],
 ]
 
@@ -20,6 +20,39 @@ export const SPACE_ROW    = KEYBOARD_HE[4]
 export const KEY_UNITS: Record<string, number> = {
   Backspace: 1.5, Tab: 1.5, Caps: 1.7, Enter: 2.1,
   LShift: 1.9, Shift: 2.4, Ctrl: 1.1, Win: 1.1, Alt: 1.1, Fn: 1.0, Space: 5.5,
+}
+
+// ── Key identity ──────────────────────────────────────────────────────────────
+
+/** Characters that can only appear as the *shifted* legend of a dual key. */
+export const DUAL_SECOND_CHARS = new Set([
+  '~','!','@','#','$','%','^','&','*','(',')',
+  '_','+','{','}','|','"','<','>','?','\\',':','״',
+])
+
+/** True for a two-legend key such as 'ף:' or '9(' — as opposed to 'ק' or 'Enter'. */
+export function isDualKey(key: string): boolean {
+  return key.length === 2 && DUAL_SECOND_CHARS.has(key.charAt(1))
+}
+
+export function normalizeKey(key: string): string {
+  if (key === ' ')      return 'Space'
+  if (key === 'LShift') return 'Shift'
+  return key
+}
+
+/**
+ * True when `probe` (a target character or a KeyboardEvent.key) is produced by `key`.
+ * Dual keys match on BOTH legends, so shifted characters — ? " : ! ( — light up too.
+ */
+export function keyMatches(key: string, probe: string): boolean {
+  if (!probe) return false
+  const p = normalizeKey(probe)
+  const label = normalizeKey(key)
+  if (label === p) return true
+  if (isDualKey(key) && (key.charAt(0) === p || key.charAt(1) === p)) return true
+  // Latin layout: a typed 'A' belongs to the 'a' key
+  return label.length === 1 && p.length === 1 && label.toLowerCase() === p.toLowerCase()
 }
 
 // ── Finger assignments ────────────────────────────────────────────────────────
@@ -54,7 +87,13 @@ export const FINGER_MAP: Record<string, string> = {
   'צ': 'right-index', 'ת': 'right-middle',
   'ץ': 'right-ring',
   '[': 'right-pinky', ']': 'right-pinky',
+  '{': 'right-pinky', '}': 'right-pinky',
   '\\': 'right-pinky','|': 'right-pinky',
+  // Punctuation, keyed by its physical position on the Hebrew layout
+  '/': 'left-pinky',  '\'': 'left-ring',
+  ',': 'right-pinky', '"': 'right-pinky', '״': 'right-pinky',
+  ';': 'right-pinky', ':': 'right-pinky',
+  '.': 'right-pinky', '?': 'right-pinky',
   ' ': 'thumb',
 }
 
@@ -62,9 +101,12 @@ export const FINGER_MAP: Record<string, string> = {
 export const KEY_ROW_HE: Record<string, number> = {
   '`':0,'~':0,'1':0,'!':0,'2':0,'@':0,'3':0,'#':0,'4':0,'$':0,'5':0,'%':0,
   '6':0,'^':0,'7':0,'&':0,'8':0,'*':0,'9':0,'(':0,'0':0,')':0,'-':0,'_':0,'=':0,'+':0,
-  '/':1,"'":1,'ק':1,'ר':1,'א':1,'ט':1,'ו':1,'ן':1,'ם':1,'פ':1,']':1,'[':1,'\\':1,
+  '/':1,"'":1,'ק':1,'ר':1,'א':1,'ט':1,'ו':1,'ן':1,'ם':1,'פ':1,']':1,'[':1,'}':1,'{':1,'\\':1,'|':1,
   'ש':2,'ד':2,'ג':2,'כ':2,'ע':2,'י':2,'ח':2,'ל':2,'ך':2,'ף':2,
-  'ז':3,'ס':3,'ב':3,'ה':3,'נ':3,'מ':3,'צ':3,'ת':3,'ץ':3,'.':3,',':3,
+  'ז':3,'ס':3,'ב':3,'ה':3,'נ':3,'מ':3,'צ':3,'ת':3,'ץ':3,
+  // ',' and '"' sit on the home row (the key right of ף); '.' and '?' on the bottom row
+  ',':2,'"':2,'״':2,';':2,':':2,
+  '.':3,'?':3,
   ' ':4,
 }
 

@@ -44,7 +44,7 @@
 
 <script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from 'vue'
-import { KEYBOARD_HE, KEY_UNITS } from './HebrewKeyboard'
+import { KEYBOARD_HE, KEY_UNITS, isDualKey, keyMatches } from './HebrewKeyboard'
 import { useKeyboardSizing } from './useKeyboardSizing'
 import { useHandOverlays } from './useHandOverlays'
 
@@ -82,32 +82,17 @@ const KEYBOARD_EN: string[][] = [
 const activeKeyboard = computed(() => lang.value === 'he' ? KEYBOARD_HE : KEYBOARD_EN)
 
 // ── Dual-key helpers ──────────────────────────────────────────────────────────
-const dualSecondChars = new Set([
-  '~','!','@','#','$','%','^','&','*','(',')',
-  '_','+','{','}','|','"','<','>','?','\\',':','״',
-])
-
-function isDualKey(key: string)    { return key.length === 2 && dualSecondChars.has(key.charAt(1)) }
 function getShifted(key: string)   { return key.charAt(1) }
 function getUnshifted(key: string) { return key.charAt(0) }
 
 // ── Key rendering ─────────────────────────────────────────────────────────────
 const wideKeys = new Set(['Backspace','Tab','Caps','Enter','LShift','Shift','Ctrl','Win','Alt','Fn','Space'])
 
-function normalizeKey(key: string) {
-  if (key === ' ')      return 'Space'
-  if (key === 'LShift') return 'Shift'
-  // For dual keys (e.g., 'ף:'), extract just the first character for comparison
-  if (key.length > 1 && isDualKey(key)) return key.charAt(0)
-  return key
-}
-
 function keyClasses(key: string) {
-  const norm = (v: string) => normalizeKey(v) === normalizeKey(key)
   return {
-    held:    norm(props.heldKey),
-    next:    norm(props.nextKey),
-    mistake: norm(props.mistakeKey),
+    held:    keyMatches(key, props.heldKey),
+    next:    keyMatches(key, props.nextKey),
+    mistake: keyMatches(key, props.mistakeKey),
     special: wideKeys.has(key) || (key.length > 1 && !isDualKey(key)),
   }
 }
