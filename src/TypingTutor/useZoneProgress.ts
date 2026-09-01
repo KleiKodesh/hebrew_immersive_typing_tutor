@@ -54,9 +54,9 @@ export function useZoneProgress(
     return t.length > 0 && typed.value.length >= t.length
   })
 
-  const isComplete = computed(
-    () => exerciseMode.value !== 'free' && isZoneDone.value && isLastZone.value
-  )
+  // Free-mode lessons still have a target paragraph, so they complete on length
+  // like any other zone — otherwise stage 6 could never be finished.
+  const isComplete = computed(() => isZoneDone.value && isLastZone.value)
 
   // recall mode
   const recallReady = ref(false)
